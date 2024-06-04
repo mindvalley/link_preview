@@ -1,22 +1,20 @@
 defmodule LinkPreview.ProcessorTest do
   use LinkPreview.Case
   alias LinkPreview.Parsers.{Opengraph, Html}
-
-  import Mock
+  use Mimic
 
   describe "call when url leads to html" do
     setup [:reset_defaults]
 
     test "ignores missing parsers and returns Page" do
-      with_mock LinkPreview.Requests, [:passthrough],
-        get: fn _ -> {:ok, %Tesla.Env{status: 200, body: @opengraph}} end,
-        head: fn _ ->
-          {:ok, %Tesla.Env{status: 200, headers: [{"content-type", "text/html"}]}}
-        end do
-        Application.put_env(:link_preview, :parsers, [Opengraph, Html, MissingOne])
+      LinkPreview.Requests
+      |> stub(:get, fn _ -> {:ok, %Tesla.Env{status: 200, body: @opengraph}} end)
+      |> stub(:get, fn _ ->
+        {:ok, %Tesla.Env{status: 200, headers: [{"content-type", "text/html"}]}}
+      end)
 
-        assert {:ok, %LinkPreview.Page{}} = LinkPreview.Processor.call(@httparrot <> "/image")
-      end
+      Application.put_env(:link_preview, :parsers, [Opengraph, Html, MissingOne])
+      assert {:ok, %LinkPreview.Page{}} = LinkPreview.Processor.call(@httparrot <> "/image")
     end
   end
 
@@ -35,32 +33,29 @@ defmodule LinkPreview.ProcessorTest do
 
   describe "call when http client returns error on" do
     test "head" do
-      with_mock LinkPreview.Requests, [:passthrough],
-        head: fn _ -> {:error, %Tesla.Error{reason: "adapter error: :econnrefused"}} end do
-        Application.put_env(:link_preview, :parsers, [Opengraph, Html, MissingOne])
+      stub(LinkPreview.Requests, :head, fn _ ->
+        {:error, %Tesla.Error{reason: "adapter error: :econnrefused"}}
+      end)
 
-        assert {:error, %LinkPreview.Error{}} = LinkPreview.Processor.call(@httparrot <> "/image")
-      end
+      Application.put_env(:link_preview, :parsers, [Opengraph, Html, MissingOne])
+
+      assert {:error, %LinkPreview.Error{}} = LinkPreview.Processor.call(@httparrot <> "/image")
     end
 
     test "get" do
-      with_mock LinkPreview.Requests, [:passthrough],
-        get: fn _ -> {:error, %Tesla.Error{reason: "adapter error: :econnrefused"}} end,
-        head: fn _ ->
-          {:ok, %Tesla.Env{status: 200, headers: [{"content-type", "text/html"}]}}
-        end do
-        Application.put_env(:link_preview, :parsers, [Opengraph, Html, MissingOne])
+      LinkPreview.Requests
+      |> stub(:get, fn _ -> {:error, %Tesla.Error{reason: "adapter error: :econnrefused"}} end)
+      |> stub(:head, fn _ ->
+        {:ok, %Tesla.Env{status: 200, headers: [{"content-type", "text/html"}]}}
+      end)
 
-        assert {:error, %LinkPreview.Error{}} = LinkPreview.Processor.call(@httparrot <> "/image")
-      end
+      Application.put_env(:link_preview, :parsers, [Opengraph, Html, MissingOne])
+      assert {:error, %LinkPreview.Error{}} = LinkPreview.Processor.call(@httparrot <> "/image")
     end
   end
 
   defp reset_defaults(opts) do
-    on_exit(fn ->
-      Application.put_env(:link_preview, :parsers, nil)
-    end)
-
+    on_exit(fn -> Application.put_env(:link_preview, :parsers, nil) end)
     {:ok, opts}
   end
 end
