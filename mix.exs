@@ -49,33 +49,22 @@ defmodule LinkPreview.Mixfile do
     ]
   end
 
-  def application do
-    [applications: applications(Mix.env())]
-  end
-
-  def applications(:all), do: [:floki, :inets, :logger, :tesla]
-  def applications(:test), do: applications(:all) ++ [:httparrot]
-  def applications(_), do: applications(:all)
-
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
     [
-      # required
-      {:floki, "~> 0.32.0"},
+      {:floki, "~> 0.36.2"},
       {:tesla, "~> 1.4"},
-
-      # optional
+      {:briefly, "~> 0.5.1"},
       {:html_entities, "~> 0.5", optional: true},
-      {:mogrify, "~> 0.9.1", optional: true},
-      {:tempfile, "~> 0.1.0", optional: true},
+      {:mogrify, "~> 0.9.3", optional: true},
 
       # testing/docs
-      {:excoveralls, "~> 0.14", only: :test},
-      {:ex_doc, "~> 0.28", only: :dev},
-      {:httparrot, "~> 0.5.0", only: :test},
-      {:mock, "~> 0.3.3", only: :test}
+      {:excoveralls, "~> 0.18.1", only: :test},
+      {:ex_doc, "~> 0.34.0", only: :dev},
+      {:httparrot, "~> 1.3", only: :test},
+      {:mimic, "~> 1.7", only: :test}
     ]
   end
 

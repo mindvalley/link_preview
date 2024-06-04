@@ -17,7 +17,8 @@ defmodule LinkPreview.Parsers.Html do
   def title(page, body) do
     title =
       body
-      |> Floki.parse()
+      |> Floki.parse_document()
+      |> elem(1)
       |> Floki.find("title")
       |> List.first()
       |> get_text
@@ -57,7 +58,7 @@ defmodule LinkPreview.Parsers.Html do
       than 100px\n
       if set to integer value it filters images with at least one dimension
       smaller than that integer\n
-      requires Mogrify and Tempfile optional packages and imagemagick to be installed on machine\n
+      requires Mogrify optional package and imagemagick to be installed on machine\n
       default: false
     \n
     WARNING: Using these options may reduce performance. To prevent very long processing time
@@ -66,7 +67,8 @@ defmodule LinkPreview.Parsers.Html do
   def images(page, body) do
     images =
       body
-      |> Floki.parse()
+      |> Floki.parse_document()
+      |> elem(1)
       |> Floki.attribute("img", "src")
       |> Enum.map(&String.trim(&1))
       |> maybe_limit
@@ -90,7 +92,8 @@ defmodule LinkPreview.Parsers.Html do
   defp search_h(body, level) do
     description =
       body
-      |> Floki.parse()
+      |> Floki.parse_document()
+      |> elem(1)
       |> Floki.find("h#{level}")
       |> List.first()
       |> get_text
@@ -140,9 +143,8 @@ defmodule LinkPreview.Parsers.Html do
 
   defp filter_small_image(url, min_size) do
     with true <- Code.ensure_loaded?(Mogrify),
-         true <- Code.ensure_loaded?(Tempfile),
          {:ok, %Tesla.Env{body: body}} <- Requests.get(url),
-         {:ok, tempfile_path} <- Tempfile.random("link_preview"),
+         {:ok, tempfile_path} <- Briefly.create(),
          :ok <- File.write(tempfile_path, body),
          %Mogrify.Image{} = raw <- Mogrify.open(tempfile_path),
          %Mogrify.Image{width: width, height: height} <- Mogrify.verbose(raw),

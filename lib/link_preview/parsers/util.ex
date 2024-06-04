@@ -7,7 +7,7 @@ defmodule LinkPreview.Parsers.Util do
 
   @doc """
     When `:friendly_string` is set to true, given url will be converted to
-    more human friedly format
+    more human friendly format
 
     * Removes leading and trailing whitespaces.
     * Changes rest of newline characters to space and replace all multiple
@@ -99,11 +99,7 @@ defmodule LinkPreview.Parsers.Util do
   defp decode_html(text) do
     code = Application.get_env(:link_preview, :code_module, Code)
 
-    if code.ensure_loaded?(HtmlEntities) do
-      text |> HtmlEntities.decode()
-    else
-      text
-    end
+    if code.ensure_loaded?(HtmlEntities), do: HtmlEntities.decode(text), else: text
   end
 
   defp force_absolute_url(url, website_url) do
